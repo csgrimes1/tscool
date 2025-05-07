@@ -1,0 +1,7 @@
+{
+    "exclude": [
+        "\\.test.ts$",
+        "\\.fixture.ts$"
+    ],    
+    "inlineSourcesContent": false
+}

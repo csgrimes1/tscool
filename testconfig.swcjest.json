@@ -1,0 +1,11 @@
+{
+    "testEnvironment": "node",
+    "transform": {
+        "^.+\\.[tj]sx?$": ["@swc/jest", {}]
+    },
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx"],
+    "detectOpenHandles": false,
+    "forceExit": true,
+    "maxWorkers": 1,
+    "testTimeout": 1000
+}

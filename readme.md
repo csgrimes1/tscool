@@ -1,0 +1,3 @@
+# TScool
+
+Typescript IS cool!

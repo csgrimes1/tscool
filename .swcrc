@@ -1,0 +1,21 @@
+{
+  "exclude": [
+    "\\.jest-cache",
+    "node_modules"
+  ],
+  "sourceMaps": "inline",
+  "jsc": {
+    "parser": {
+      "syntax": "typescript",
+      "decorators": true
+    },
+    "transform": {
+      "legacyDecorator": true,
+      "decoratorMetadata": true
+    },
+    "baseUrl": "./",
+    "paths": {
+    },
+    "target": "es2016"
+  }
+}
