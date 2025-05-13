@@ -5,7 +5,7 @@ import {
     createSafeDispatcher, EventDispatcher, EventDispatchResult,
     EventDispatchStrategyCallback, Event,
 } from '@tscool/events'
-import { getCurrentStackFrames } from '@tscool/errx'
+import { getCurrentStackFrames } from '@tscool/errors'
 import { Logger } from './logger'
 import { LevelNumToName, LoggingApi, logLevelIds, logLevelNames, LogLevelNames, LogRecordEnvelope, verbosity } from './types'
 import { jsonListener, prettyListener } from './listeners'

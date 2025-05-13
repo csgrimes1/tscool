@@ -1,4 +1,4 @@
-// import { err } from '@tscool/errx'
+// import { err } from '@tscool/errors'
 
 // const e = err.create(1234, {x: 1})
 // console.log(e, 'Hello, ...world?')

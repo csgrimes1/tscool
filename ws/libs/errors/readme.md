@@ -1,4 +1,4 @@
-## ErrX
+## Errors
 
 Adds form and function to JavaScript errors.
 

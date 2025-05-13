@@ -34,8 +34,8 @@
       "@tool/helloworld": [
         "ws/tools/helloworld/main.ts"
       ],
-      "@tscool/errx": [
-        "ws/libs/errx/src/index.ts"
+      "@tscool/errors": [
+        "ws/libs/errors/src/index.ts"
       ],
       "@tscool/events": [
         "ws/libs/events/src/index.ts"

@@ -1,4 +1,4 @@
-import { err } from '@tscool/errx'
+import { err } from '@tscool/errors'
 import { cached } from '@tscool/tsutils'
 
 const _sr = /^[A-Z][A-Z0-9]+(_[A-Z0-9]+)*$/
