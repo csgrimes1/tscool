@@ -1,63 +1,137 @@
-import { gen2array, JsonCode, Result } from '@tscool/tsutils'
+import { gen2array, hmac, JsonCode, Result } from '@tscool/tsutils'
 import { trySync } from '@tscool/tsutils'
 import { asyncSerialProcess } from '@tscool/asyncserial'
 import {
     EventCallback, EventCallbackAsynchronous, EventCallbackSynchronous,
-    EventDispatchResult, Event,
+    EventDispatchResult,
     EventResult,
     Synchronicity,
     EventDispatchStrategyCallback,
+    RawSyncHandler,
+    RawAsyncHandler,
 } from './types'
 
-type _EventListeners<T, R> = Map<JsonCode, EventCallback<T, R>>
+/** Map type used internally by EventDispatcher. */
+export type EventListeners<T, R> = Map<JsonCode, EventCallback<T, R>>
 
+function _keyFor(callback: Function, code?: JsonCode): JsonCode {
+    if (code === undefined) {
+        return hmac('eventdispatcher', callback.toString())
+    }
+    return code as JsonCode
+}
+
+/** Manages a single event of a specific type signature. Supports multiple dispatch models
+ *  in terms of synchronicity and parallelism.
+ */
 export class EventDispatcher<T, R> {
-    constructor(readonly map: _EventListeners<T, R> = new Map<JsonCode, EventCallback<T, R>>()) {
+    constructor(readonly map: EventListeners<T, R> = new Map<JsonCode, EventCallback<T, R>>()) {
     }
 
-    register(code: JsonCode, callback: EventCallback<T, R>) {
-        return this.map.set(code, callback)
+    /**
+     * General registration of an event handler.
+     * @param callback Event handler.
+     * @param code Code to uniquely identify the handler. The same handler can be used in association with
+     *  multiple codes, responding differently to each code. If this parameter is undefined, a
+     *  default code will be generated using an HMAC of the function's code. The code is used as key
+     *  in the internal map.
+     * @returns An object containing the proposed and used code, a pointer to the event handler,
+     *  and the `this` object for chaining. The usedCode field must be saved when the code parameter
+     *  is undefined to allow removing the event handler later.
+     */
+    register(callback: EventCallback<T, R>, code?: JsonCode) {
+        const usedCode = code ?? _keyFor(callback, code)
+        this.map.set(usedCode, callback)
+        return {
+            proposedCode: code,
+            usedCode,
+            callback,
+            eventDispatcher: this,
+        }
     }
-    registerSync(code: JsonCode, callback: (e: Event<T>) => R) {
+
+    /**
+     * Wrapper for the register method.
+     * @param callback Event handler as a naked function. This method tags the
+     *  function with the synchronicity attribute as a convenience.
+     * @param code See register method.
+     * @returns See register method.
+     */
+    registerSync(callback: RawSyncHandler<T, R>, code?: JsonCode) {
         const synchronicity: Synchronicity = 'sync'
         const ecb = Object.assign(
             callback.bind(null),
             { synchronicity }
         )
-        return this.register(code, ecb)
+        return this.register(ecb, code)
     }
 
+    /**
+     * Wrapper for the register method.
+     * @param callback Event handler as a naked function. This method tags the
+     *  function with the synchronicity attribute as a convenience.
+     * @param code See register method.
+     * @returns See register method.
+     */
+    registerAsync(callback: RawAsyncHandler<T, R>, code?: JsonCode) {
+        const synchronicity: Synchronicity = 'async'
+        const ecb = Object.assign(
+            callback.bind(null),
+            { synchronicity }
+        )
+        return this.register(ecb, code)
+    }
+
+    /**
+     * Attempts to remove an registered event handler.
+     * @param code The key of the handler.
+     */
     remove(code: JsonCode) {
-        return this.map.delete(code)
+        const found = this.map.delete(code)
+        return {
+            code,
+            found,
+            eventDispatcher: this,
+        }
     }
 
+    /**
+     * Emits to only the synchronouse handlers.
+     * @param data Event
+     * @returns An object containing the return values from each listener. The method
+     *  does not catch errors thrown by event handlers.
+     */
     emitSync(data: T): EventDispatchResult<R> {
         const returnValues = Array.from(this.map.entries())
             .filter(([_id, callback]) => callback.synchronicity === 'sync')
             .map(([id, callback]) => [id, callback] as [JsonCode, EventCallbackSynchronous<T, R>])
-            .map(([id, callback]): [JsonCode, R] => [id, callback({ data, id })])
+            .map(([id, callback]): [JsonCode, R] => [id, callback(data, id)])
             .map(([id, returnValue]) => ({
                 id, returnValue, ok: true
             }))
         return {
             returnValues,
-            ok: true,
         }
     }
 
+    /**
+     * Emits event only to synchronous handlers. All handlers will be called, and
+     * any errors are contained in the returned object's returnValues field.
+     * @param data Event
+     * @returns An object containing the result or error from each handler.
+     */
     emitSyncSafe(data: T): EventDispatchResult<R> {
         const returnValues = Array.from(this.map.entries())
             .filter(([_id, callback]) => callback.synchronicity === 'sync')
             .map(([id, callback]) => [id, callback] as [JsonCode, EventCallbackSynchronous<T, R>])
             .map(([id, callback]) => {
-                const res = trySync(() => callback({ id, data }))
+                const res = trySync(() => callback(data, id))
                 return res.ok
                     ? { id, returnValue: res.value, ok: true }
                     : { id, error: res.error, ok: false }
             })
         return {
             returnValues,
-            ok: true,
         }
     }
 
@@ -68,7 +142,6 @@ export class EventDispatcher<T, R> {
         const returnValues = await Promise.all(r)
         return {
             returnValues,
-            ok: true,
         }
     }
 
@@ -83,9 +156,6 @@ export class EventDispatcher<T, R> {
             )
         return {
             returnValues,
-            ok: returnValues
-                .filter(item => item.ok)
-                .length > 0,
         }
     }
 
@@ -95,7 +165,7 @@ export class EventDispatcher<T, R> {
     ): Promise<EventDispatchResult<R>> {
         const ids = Array.from(this.map.keys())
         const tasks = Array.from(this.map.entries())
-            .map(([id, cb]) => () => (cb as EventCallbackAsynchronous<T, R>)({ id, data }))
+            .map(([id, cb]) => () => (cb as EventCallbackAsynchronous<T, R>)(data, id))
         const chunks = await asyncSerialProcess<R>(tasks, chunkSize, completionCallback)
         const returnValues = (await gen2array(chunks))
             .flat()
@@ -107,9 +177,6 @@ export class EventDispatcher<T, R> {
             }))
         return {
             returnValues,
-            ok: returnValues
-                .filter(item => item.ok)
-                .length > 0,
         }
     }
 }
@@ -119,14 +186,14 @@ function _wrapCallback<T, R>(id: JsonCode, callback: EventCallback<T, R>, throwX
         const cb = callback.synchronicity === 'async'
             ? callback as EventCallbackAsynchronous<T, R>
             : Object.assign(
-                async function (arg: Event<T>) {
-                    return callback(arg)
+                async function (arg: T) {
+                    return callback(arg, id)
                 },
                 {
                     synchronicity: 'async'
                 }
             )
-        return cb({ data, id })
+        return cb(data, id)
             .then(result => ({
                 id,
                 result,

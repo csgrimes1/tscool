@@ -1,10 +1,6 @@
 import { JsonCode } from '@tscool/tsutils'
 import { EventDispatcher } from 'ws/libs/events/src/dispatcher'
 
-export interface Event<T> {
-    readonly id: JsonCode
-    readonly data: T
-}
 
 export type Synchronicity = 'sync' | 'async'
 
@@ -12,12 +8,13 @@ export interface BaseEventCallback {
     readonly synchronicity: Synchronicity
 }
 
-export interface EventCallbackSynchronous<T, R> extends BaseEventCallback {
-    (e: Event<T>): R
+export type RawSyncHandler<T, R> = (e: T, code: JsonCode) => R
+export interface EventCallbackSynchronous<T, R> extends RawSyncHandler<T, R>, BaseEventCallback {
+    
     readonly synchronicity: 'sync'
 }
-export interface EventCallbackAsynchronous<T, R> extends BaseEventCallback {
-    (e: Event<T>): Promise<R>
+export type RawAsyncHandler<T, R> = (e: T, code: JsonCode) => Promise<R>
+export interface EventCallbackAsynchronous<T, R> extends RawAsyncHandler<T, R>, BaseEventCallback {
     readonly synchronicity: 'async'
 }
 export type EventCallback<T, R> = EventCallbackSynchronous<T, R>
@@ -35,8 +32,7 @@ export interface EventResult<R> extends _EventResult {
     readonly returnValue?: R
 }
 
-export interface EventDispatchResult<R>
-    extends _EventResult {
+export interface EventDispatchResult<R> {
     readonly returnValues: ReadonlyArray<EventResult<R>>
 }
 
