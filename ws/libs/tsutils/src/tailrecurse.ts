@@ -10,7 +10,7 @@ export interface RecursionContext<State, R> {
 const _doRecurse = Symbol.for('doRecurse');
 
 type _ContinuationResult<State> = {
-    readonly tag: Symbol
+    readonly tag: symbol
     readonly state: State
 }
 

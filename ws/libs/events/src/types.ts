@@ -1,6 +1,4 @@
-import { JsonCode } from '@tscool/tsutils'
-import { EventDispatcher } from 'ws/libs/events/src/dispatcher'
-
+import { JsonCode, Result } from '@tscool/tsutils'
 
 export type Synchronicity = 'sync' | 'async'
 
@@ -36,7 +34,31 @@ export interface EventDispatchResult<R> {
     readonly returnValues: ReadonlyArray<EventResult<R>>
 }
 
+export interface SupportsEmit<T, R> {
+        /**
+     * Emits to only the synchronouse handlers.
+     * @param data Event
+     * @returns An object containing the return values from each listener. The method
+     *  does not catch errors thrown by event handlers.
+     */
+    emitSync(data: T): EventDispatchResult<R>
+
+    /**
+     * Emits event only to synchronous handlers. All handlers will be called, and
+     * any errors are contained in the returned object's returnValues field.
+     * @param data Event
+     * @returns An object containing the result or error from each handler.
+     */
+    emitSyncSafe(data: T): EventDispatchResult<R>
+    emitParallel(data: T): Promise<EventDispatchResult<R>>
+    emitParallelSafe(data: T): Promise<EventDispatchResult<R>>
+    emitSerialSafe(
+        data: T, chunkSize: number,
+        completionCallback?: <TSuccess, TError>(_chunk: Result<TSuccess, TError>[]) => Promise<boolean>
+    ): Promise<EventDispatchResult<R>>
+}
+
 export type EventDispatchStrategyCallback<T, R> = {
     (data: T): EventDispatchResult<R>
-    readonly dispatcher: EventDispatcher<T, R>
+    readonly dispatcher: SupportsEmit<T, R>
 }

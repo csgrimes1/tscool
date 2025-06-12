@@ -1,6 +1,7 @@
 import { gen2array, hmac, JsonCode, Result } from '@tscool/tsutils'
-import { trySync } from '@tscool/tsutils'
+import { trySync, pruneUndef } from '@tscool/tsutils'
 import { asyncSerialProcess } from '@tscool/asyncserial'
+import { err } from '@tscool/errors'
 import {
     EventCallback, EventCallbackAsynchronous, EventCallbackSynchronous,
     EventDispatchResult,
@@ -14,7 +15,7 @@ import {
 /** Map type used internally by EventDispatcher. */
 export type EventListeners<T, R> = Map<JsonCode, EventCallback<T, R>>
 
-function _keyFor(callback: Function, code?: JsonCode): JsonCode {
+function _keyFor(callback: Function, code?: JsonCode): JsonCode { // eslint-disable-line
     if (code === undefined) {
         return hmac('eventdispatcher', callback.toString())
     }
@@ -140,6 +141,12 @@ export class EventDispatcher<T, R> {
             .map(([id, callback]) => _wrapCallback(id, callback, false))
             .map(callback => callback(data))
         const returnValues = await Promise.all(r)
+        const errors = returnValues.filter(x => !x.ok) as EventResult<R>[]
+        if (errors.length > 0) {
+            throw err.create('PARALLEL-EMIT-ERROR', { 
+                errors: errors.map((er: any) => (er.error?.id ?? er.error?.message ?? null))
+            })
+        }
         return {
             returnValues,
         }
@@ -169,12 +176,12 @@ export class EventDispatcher<T, R> {
         const chunks = await asyncSerialProcess<R>(tasks, chunkSize, completionCallback)
         const returnValues = (await gen2array(chunks))
             .flat()
-            .map((res, index): EventResult<R> => ({
+            .map((res, index): EventResult<R> => pruneUndef({
                 ok: res.ok,
                 id: ids[index],
                 error: res.error,
                 returnValue: res.value,
-            }))
+            }) as EventResult<R>)
         return {
             returnValues,
         }
@@ -194,9 +201,9 @@ function _wrapCallback<T, R>(id: JsonCode, callback: EventCallback<T, R>, throwX
                 }
             )
         return cb(data, id)
-            .then(result => ({
+            .then(returnValue => ({
                 id,
-                result,
+                returnValue,
                 ok: true,
             }))
             .catch((error: Error) => ({

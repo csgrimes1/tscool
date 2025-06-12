@@ -1,4 +1,4 @@
-import { JsonArray, SimplifyDeep } from 'type-fest'
+import { SimplifyDeep } from 'type-fest'
 import { ArrayAtLeastTwoElements, convertTo, JsonValue, toString } from '@tscool/tsutils'
 import { VarName } from './namestrings'
 import { err } from '@tscool/errors'

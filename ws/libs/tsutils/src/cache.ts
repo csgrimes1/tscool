@@ -54,6 +54,6 @@ export class Cache<K, T> {
 
 export function once<T>(initializer: () => T): () => T
 {
-    let result = initializer()
+    const result = initializer()
     return () => result
 }

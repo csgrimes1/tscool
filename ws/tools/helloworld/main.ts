@@ -8,7 +8,7 @@ const log = makeModuleLog()
 
 class C {
     constructor(x: any) {
-        console.log('Making object')
+        console.log({x}, 'Making object')
     }
 }
 

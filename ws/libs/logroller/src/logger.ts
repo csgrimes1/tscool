@@ -40,6 +40,7 @@ export class Logger implements ILogger {
     meteredLogger(code: JsonCode, period: MILLISECONDS=60000) {
         const now = Date.now()
         const val = this._cache.access(code, () => new Expiring(now, period))
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this
         // If it's new...
         if (val === now) {

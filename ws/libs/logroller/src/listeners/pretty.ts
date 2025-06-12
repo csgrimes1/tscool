@@ -1,5 +1,5 @@
 import { Event } from '@tscool/events'
-import { LevelNumToName, LogRecord, LogRecordEnvelope, verbosity } from '../types'
+import { LevelNumToName, LogRecordEnvelope, verbosity } from '../types'
 
 function _format(env: LogRecordEnvelope) {
     const logrec = env.data

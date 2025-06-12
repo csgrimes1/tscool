@@ -1,4 +1,4 @@
-export function safeJsonvalue(k: any, v: any) { // eslint-disable-line
+export function safeJsonvalue(k: any, v: any) {
     if (!k) return v
     if (v === undefined) {
         return null

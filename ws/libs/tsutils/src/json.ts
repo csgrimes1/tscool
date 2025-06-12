@@ -75,6 +75,7 @@ export function toArray(value: JsonValue, defaultValue?: JsonArray): JsonArray {
         if (trimmed.match(/^\[.*\]$/)) {
             try {
                 return JSON.parse(trimmed)
+            // eslint-disable-next-line no-empty
             } catch {}
         }
         return Array.from(value)
@@ -90,3 +91,4 @@ export const convertTo = {
     string: toString,
     array: toArray,
 }
+
