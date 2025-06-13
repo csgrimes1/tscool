@@ -8,7 +8,7 @@ const log = makeModuleLog()
 
 class C {
     constructor(x: any) {
-        console.log({x}, 'Making object')
+        log?.debug?.text('Making object', {x})
     }
 }
 
@@ -27,11 +27,10 @@ const _x: Record<string, T> = {
 }
 
 function dumpstuff() {
-    console.log('dumping')
-    // console.log(log, '<<<<<<<<<')
     log?.error?.coded('yo', 'error', {a: 'b'})
     log?.info?.coded('yo', 'info', {a: 'info'})
     log?.debug?.coded('yo', 'debug', {a: 'debug'})
+    log?.warn?.text('wake up, bro')
 }
 
 _x.unset?.create(dumpstuff())

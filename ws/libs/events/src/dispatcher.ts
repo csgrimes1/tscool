@@ -41,7 +41,7 @@ export class EventDispatcher<T, R> {
      *  is undefined to allow removing the event handler later.
      */
     register(callback: EventCallback<T, R>, code?: JsonCode) {
-        const usedCode = code ?? _keyFor(callback, code)
+        const usedCode = code ?? callback.code ?? _keyFor(callback, code)
         this.map.set(usedCode, callback)
         return {
             proposedCode: code,
@@ -62,7 +62,10 @@ export class EventDispatcher<T, R> {
         const synchronicity: Synchronicity = 'sync'
         const ecb = Object.assign(
             callback.bind(null),
-            { synchronicity }
+            {
+                synchronicity,
+                code: code ?? callback.code
+            }
         )
         return this.register(ecb, code)
     }
@@ -78,7 +81,10 @@ export class EventDispatcher<T, R> {
         const synchronicity: Synchronicity = 'async'
         const ecb = Object.assign(
             callback.bind(null),
-            { synchronicity }
+            {
+                synchronicity,
+                code: code ?? callback.code
+            }
         )
         return this.register(ecb, code)
     }
